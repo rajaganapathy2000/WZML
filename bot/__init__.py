@@ -22,7 +22,7 @@ setdefaulttimeout(600)
 
 botStartTime = time()
 
-basicConfig(format="[%(asctime)s] [%(levelname)s] - %(message)s",
+basicConfig(format="[%(asctime)s] [%(levelname)s] - %(message)s", #  [%(filename)s:%(lineno)d]
             datefmt="%d-%b-%y %I:%M:%S %p",
             handlers=[FileHandler('log.txt'), StreamHandler()],
             level=INFO)
@@ -52,7 +52,7 @@ non_queued_up = set()
 def get_version():
     MAJOR = '1'
     MINOR = '1'
-    PATCH = '1'
+    PATCH = '3'
     return f"v{MAJOR}.{MINOR}.{PATCH}-x"
 
 
@@ -185,9 +185,13 @@ user = ''
 USER_SESSION_STRING = environ.get('USER_SESSION_STRING', '')
 if len(USER_SESSION_STRING) != 0:
     log_info("Creating client from USER_SESSION_STRING")
-    user = tgClient('user', TELEGRAM_API, TELEGRAM_HASH, session_string=USER_SESSION_STRING,
-                    parse_mode=enums.ParseMode.HTML).start()
-    IS_PREMIUM_USER = user.me.is_premium
+    try:
+        user = tgClient('user', TELEGRAM_API, TELEGRAM_HASH, session_string=USER_SESSION_STRING,
+                        parse_mode=enums.ParseMode.HTML).start()
+        IS_PREMIUM_USER = user.me.is_premium
+    except Exception as e:
+        log_error(f"Failed making client from USER_SESSION_STRING : {e}")
+        user = ''
 
 MEGA_EMAIL = environ.get('MEGA_EMAIL', '')
 MEGA_PASSWORD = environ.get('MEGA_PASSWORD', '')
@@ -208,6 +212,10 @@ SEARCH_API_LINK = environ.get('SEARCH_API_LINK', '').rstrip("/")
 if len(SEARCH_API_LINK) == 0:
     SEARCH_API_LINK = ''
 
+CAP_FONT = environ.get('CAP_FONT', '').lower()
+if CAP_FONT.strip() not in ['', 'b', 'i', 'u', 's', 'spoiler', 'code']:
+    CAP_FONT = 'code'
+
 LEECH_FILENAME_PREFIX = environ.get('LEECH_FILENAME_PREFIX', '')
 if len(LEECH_FILENAME_PREFIX) == 0:
     LEECH_FILENAME_PREFIX = ''
@@ -223,6 +231,18 @@ if len(LEECH_FILENAME_CAPTION) == 0:
 LEECH_FILENAME_REMNAME = environ.get('LEECH_FILENAME_REMNAME', '')
 if len(LEECH_FILENAME_REMNAME) == 0:
     LEECH_FILENAME_REMNAME = ''
+    
+MIRROR_FILENAME_PREFIX = environ.get('MIRROR_FILENAME_PREFIX', '')
+if len(MIRROR_FILENAME_PREFIX) == 0:
+    MIRROR_FILENAME_PREFIX = ''
+
+MIRROR_FILENAME_SUFFIX = environ.get('MIRROR_FILENAME_SUFFIX', '')
+if len(MIRROR_FILENAME_SUFFIX) == 0:
+    MIRROR_FILENAME_SUFFIX = ''
+
+MIRROR_FILENAME_REMNAME = environ.get('MIRROR_FILENAME_REMNAME', '')
+if len(MIRROR_FILENAME_REMNAME) == 0:
+    MIRROR_FILENAME_REMNAME = ''
 
 SEARCH_PLUGINS = environ.get('SEARCH_PLUGINS', '')
 if len(SEARCH_PLUGINS) == 0:
@@ -298,6 +318,15 @@ WEB_PINCODE = WEB_PINCODE.lower() == 'true'
 
 AS_DOCUMENT = environ.get('AS_DOCUMENT', '')
 AS_DOCUMENT = AS_DOCUMENT.lower() == 'true'
+
+SHOW_MEDIAINFO = environ.get('SHOW_MEDIAINFO', '')
+SHOW_MEDIAINFO = SHOW_MEDIAINFO.lower() == 'true'
+
+SOURCE_LINK = environ.get('SOURCE_LINK', '')
+SOURCE_LINK = SOURCE_LINK.lower() == 'true'
+
+DELETE_LINKS = environ.get('DELETE_LINKS', '')
+DELETE_LINKS = DELETE_LINKS.lower() == 'true'
 
 EQUAL_SPLITS = environ.get('EQUAL_SPLITS', '')
 EQUAL_SPLITS = EQUAL_SPLITS.lower() == 'true'
@@ -471,6 +500,21 @@ if len(ANIME_TEMPLATE) == 0:
 
 <b>Description</b>: <i>{description}</i>'''
 
+MDL_TEMPLATE = environ.get('MDL_TEMPLATE', '')
+if len(MDL_TEMPLATE) == 0:
+    MDL_TEMPLATE = '''<b>Title:</b> {title}
+<b>Also Known As:</b> {aka}
+<b>Rating ⭐️:</b> <i>{rating}</i>
+<b>Release Info:</b> {aired_date}
+<b>Genre:</b> {genres}
+<b>MyDramaList URL:</b> {url}
+<b>Language:</b> #Korean
+<b>Country of Origin:</b> {country}
+
+<b>Story Line:</b> {synopsis}
+
+<a href='{url}'>Read More ...</a>'''
+
 TIMEZONE = environ.get('TIMEZONE', '')
 if len(TIMEZONE) == 0:
     TIMEZONE = 'Asia/Kolkata'
@@ -482,8 +526,10 @@ config_dict = {'ANIME_TEMPLATE': ANIME_TEMPLATE,
                'BASE_URL': BASE_URL,
                'BASE_URL_PORT': BASE_URL_PORT,
                'BOT_TOKEN': BOT_TOKEN,
+               'CAP_FONT': CAP_FONT,
                'CMD_SUFFIX': CMD_SUFFIX,
                'DATABASE_URL': DATABASE_URL,
+               'DELETE_LINKS': DELETE_LINKS,
                'DEFAULT_UPLOAD': DEFAULT_UPLOAD,
                'DOWNLOAD_DIR': DOWNLOAD_DIR,
                'STORAGE_THRESHOLD': STORAGE_THRESHOLD,
@@ -524,9 +570,13 @@ config_dict = {'ANIME_TEMPLATE': ANIME_TEMPLATE,
                'LEECH_FILENAME_SUFFIX': LEECH_FILENAME_SUFFIX,
                'LEECH_FILENAME_CAPTION': LEECH_FILENAME_CAPTION,
                'LEECH_FILENAME_REMNAME': LEECH_FILENAME_REMNAME,
+               'MIRROR_FILENAME_PREFIX': MIRROR_FILENAME_PREFIX,
+               'MIRROR_FILENAME_SUFFIX': MIRROR_FILENAME_SUFFIX,
+               'MIRROR_FILENAME_REMNAME': MIRROR_FILENAME_REMNAME,
                'LEECH_SPLIT_SIZE': LEECH_SPLIT_SIZE,
                'LOGIN_PASS': LOGIN_PASS,
                'TOKEN_TIMEOUT': TOKEN_TIMEOUT,
+               'MDL_TEMPLATE': MDL_TEMPLATE,
                'MEDIA_GROUP': MEDIA_GROUP,
                'MEGA_EMAIL': MEGA_EMAIL,
                'MEGA_PASSWORD': MEGA_PASSWORD,
@@ -547,6 +597,8 @@ config_dict = {'ANIME_TEMPLATE': ANIME_TEMPLATE,
                'SEARCH_LIMIT': SEARCH_LIMIT,
                'SEARCH_PLUGINS': SEARCH_PLUGINS,
                'SET_COMMANDS': SET_COMMANDS,
+               'SHOW_MEDIAINFO': SHOW_MEDIAINFO,
+               'SOURCE_LINK': SOURCE_LINK,
                'STATUS_LIMIT': STATUS_LIMIT,
                'STATUS_UPDATE_INTERVAL': STATUS_UPDATE_INTERVAL,
                'STOP_DUPLICATE': STOP_DUPLICATE,

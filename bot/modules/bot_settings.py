@@ -43,11 +43,11 @@ default_values = {'AUTO_DELETE_MESSAGE_DURATION': 30,
                   'IMG_PAGE': 1,
                   'AUTHOR_NAME': 'WZML-X',
                   'AUTHOR_URL': 'https://t.me/WZML_X',
-                  'TITLE_NAME': 'WeebZone-X',
+                  'TITLE_NAME': 'WZ Mirror/Leech X',
                   'GD_INFO': 'Uploaded by WZML-X',
                   }
-bool_vars = ['AS_DOCUMENT', 'BOT_PM', 'STOP_DUPLICATE', 'SET_COMMANDS', 'SAVE_MSG',
-             'IS_TEAM_DRIVE', 'USE_SERVICE_ACCOUNTS', 'WEB_PINCODE', 'EQUAL_SPLITS', 'DISABLE_DRIVE_LINK']
+bool_vars = ['AS_DOCUMENT', 'BOT_PM', 'STOP_DUPLICATE', 'SET_COMMANDS', 'SAVE_MSG', 'SHOW_MEDIAINFO', 'SOURCE_LINK',
+             'IS_TEAM_DRIVE', 'USE_SERVICE_ACCOUNTS', 'WEB_PINCODE', 'EQUAL_SPLITS', 'DISABLE_DRIVE_LINK', 'DELETE_LINKS']
 
 
 async def load_config():
@@ -135,6 +135,10 @@ async def load_config():
     if len(SEARCH_API_LINK) == 0:
         SEARCH_API_LINK = ''
 
+    CAP_FONT = environ.get('CAP_FONT', '').lower()
+    if CAP_FONT.strip() not in ['', 'b', 'i', 'u', 's', 'spoiler', 'code']:
+        CAP_FONT = 'code'
+        
     LEECH_FILENAME_PREFIX = environ.get('LEECH_FILENAME_PREFIX', '')
     if len(LEECH_FILENAME_PREFIX) == 0:
         LEECH_FILENAME_PREFIX = ''
@@ -151,6 +155,18 @@ async def load_config():
     if len(LEECH_FILENAME_REMNAME) == 0:
         LEECH_FILENAME_REMNAME = ''
 
+    MIRROR_FILENAME_PREFIX = environ.get('MIRROR_FILENAME_PREFIX', '')
+    if len(MIRROR_FILENAME_PREFIX) == 0:
+        MIRROR_FILENAME_PREFIX = ''
+
+    MIRROR_FILENAME_SUFFIX = environ.get('MIRROR_FILENAME_SUFFIX', '')
+    if len(MIRROR_FILENAME_SUFFIX) == 0:
+        MIRROR_FILENAME_SUFFIX = ''
+
+    MIRROR_FILENAME_REMNAME = environ.get('MIRROR_FILENAME_REMNAME', '')
+    if len(MIRROR_FILENAME_REMNAME) == 0:
+        MIRROR_FILENAME_REMNAME = ''
+        
     SEARCH_PLUGINS = environ.get('SEARCH_PLUGINS', '')
     if len(SEARCH_PLUGINS) == 0:
         SEARCH_PLUGINS = ''
@@ -258,6 +274,15 @@ async def load_config():
 
     AS_DOCUMENT = environ.get('AS_DOCUMENT', '')
     AS_DOCUMENT = AS_DOCUMENT.lower() == 'true'
+
+    SHOW_MEDIAINFO = environ.get('SHOW_MEDIAINFO', '')
+    SHOW_MEDIAINFO = SHOW_MEDIAINFO.lower() == 'true'
+    
+    SOURCE_LINK = environ.get('SOURCE_LINK', '')
+    SOURCE_LINK = SOURCE_LINK.lower() == 'true'
+
+    DELETE_LINKS = environ.get('DELETE_LINKS', '')
+    DELETE_LINKS = DELETE_LINKS.lower() == 'true'
 
     EQUAL_SPLITS = environ.get('EQUAL_SPLITS', '')
     EQUAL_SPLITS = EQUAL_SPLITS.lower() == 'true'
@@ -403,36 +428,55 @@ async def load_config():
     DEF_IMDB_TEMP  = environ.get('IMDB_TEMPLATE', '')
     if len(DEF_IMDB_TEMP) == 0:
         DEF_IMDB_TEMP = '''<b>Title: </b> {title} [{year}]
-    <b>Also Known As:</b> {aka}
-    <b>Rating ⭐️:</b> <i>{rating}</i>
-    <b>Release Info: </b> <a href="{url_releaseinfo}">{release_date}</a>
-    <b>Genre: </b>{genres}
-    <b>IMDb URL:</b> {url}
-    <b>Language: </b>{languages}
-    <b>Country of Origin : </b> {countries}
+<b>Also Known As:</b> {aka}
+<b>Rating ⭐️:</b> <i>{rating}</i>
+<b>Release Info: </b> <a href="{url_releaseinfo}">{release_date}</a>
+<b>Genre: </b>{genres}
+<b>IMDb URL:</b> {url}
+<b>Language: </b>{languages}
+<b>Country of Origin : </b> {countries}
 
-    <b>Story Line: </b><code>{plot}</code>
+<b>Story Line: </b><code>{plot}</code>
 
-    <a href="{url_cast}">Read More ...</a>'''
+<a href="{url_cast}">Read More ...</a>'''
 
     DEF_ANI_TEMP  = environ.get('ANIME_TEMPLATE', '')
     if len(DEF_ANI_TEMP) == 0:
         DEF_ANI_TEMP = '''<b>{ro_title}</b>({na_title})
-    <b>Format</b>: <code>{format}</code>
-    <b>Status</b>: <code>{status}</code>
-    <b>Start Date</b>: <code>{startdate}</code>
-    <b>End Date</b>: <code>{enddate}</code>
-    <b>Season</b>: <code>{season}</code>
-    <b>Country</b>: {country}
-    <b>Episodes</b>: <code>{episodes}</code>
-    <b>Duration</b>: <code>{duration}</code>
-    <b>Average Score</b>: <code>{avgscore}</code>
-    <b>Genres</b>: {genres}
-    <b>Hashtag</b>: {hashtag}
-    <b>Studios</b>: {studios}
+<b>Format</b>: <code>{format}</code>
+<b>Status</b>: <code>{status}</code>
+<b>Start Date</b>: <code>{startdate}</code>
+<b>End Date</b>: <code>{enddate}</code>
+<b>Season</b>: <code>{season}</code>
+<b>Country</b>: {country}
+<b>Episodes</b>: <code>{episodes}</code>
+<b>Duration</b>: <code>{duration}</code>
+<b>Average Score</b>: <code>{avgscore}</code>
+<b>Genres</b>: {genres}
+<b>Hashtag</b>: {hashtag}
+<b>Studios</b>: {studios}
 
-    <b>Description</b>: <i>{description}</i>'''
+<b>Description</b>: <i>{description}</i>'''
 
+    MDL_TEMPLATE = environ.get('MDL_TEMPLATE', '')
+    if len(MDL_TEMPLATE) == 0:
+        MDL_TEMPLATE = '''<b>Title:</b> {title}
+<b>Also Known As:</b> {aka}
+<b>Rating ⭐️:</b> <i>{rating}</i>
+<b>Release Info:</b> {aired_date}
+<b>Genre:</b> {genres}
+<b>MyDramaList URL:</b> {url}
+<b>Language:</b> #Korean
+<b>Country of Origin:</b> {country}
+
+<b>Story Line:</b> {synopsis}
+
+<a href='{url}'>Read More ...</a>'''
+    
+    TIMEZONE = environ.get('TIMEZONE', '')
+    if len(TIMEZONE) == 0:
+        TIMEZONE = 'Asia/Kolkata'
+        
     DRIVES_IDS.clear()
     DRIVES_NAMES.clear()
     INDEX_URLS.clear()
@@ -481,8 +525,10 @@ async def load_config():
                         'BASE_URL': BASE_URL,
                         'BASE_URL_PORT': BASE_URL_PORT,
                         'BOT_TOKEN': BOT_TOKEN,
+                        'CAP_FONT': CAP_FONT,
                         'CMD_SUFFIX': CMD_SUFFIX,
                         'DATABASE_URL': DATABASE_URL,
+                        'DELETE_LINKS': DELETE_LINKS,
                         'DEFAULT_UPLOAD': DEFAULT_UPLOAD,
                         'DOWNLOAD_DIR': DOWNLOAD_DIR,
                         'STORAGE_THRESHOLD': STORAGE_THRESHOLD,
@@ -522,12 +568,16 @@ async def load_config():
                         'LEECH_FILENAME_SUFFIX': LEECH_FILENAME_SUFFIX,
                         'LEECH_FILENAME_CAPTION': LEECH_FILENAME_CAPTION,
                         'LEECH_FILENAME_REMNAME': LEECH_FILENAME_REMNAME,
+                        'MIRROR_FILENAME_PREFIX': MIRROR_FILENAME_PREFIX,
+                        'MIRROR_FILENAME_SUFFIX': MIRROR_FILENAME_SUFFIX,
+                        'MIRROR_FILENAME_REMNAME': MIRROR_FILENAME_REMNAME,
                         'LEECH_SPLIT_SIZE': LEECH_SPLIT_SIZE,
                         'LOGIN_PASS': LOGIN_PASS,
                         'TOKEN_TIMEOUT': TOKEN_TIMEOUT,
                         'MEDIA_GROUP': MEDIA_GROUP,
                         'MEGA_EMAIL': MEGA_EMAIL,
                         'MEGA_PASSWORD': MEGA_PASSWORD,
+                        'MDL_TEMPLATE': MDL_TEMPLATE,
                         'OWNER_ID': OWNER_ID,
                         'QUEUE_ALL': QUEUE_ALL,
                         'QUEUE_DOWNLOAD': QUEUE_DOWNLOAD,
@@ -545,12 +595,15 @@ async def load_config():
                         'SEARCH_LIMIT': SEARCH_LIMIT,
                         'SEARCH_PLUGINS': SEARCH_PLUGINS,
                         'SET_COMMANDS': SET_COMMANDS,
+                        'SHOW_MEDIAINFO': SHOW_MEDIAINFO,
+                        'SOURCE_LINK': SOURCE_LINK,
                         'STATUS_LIMIT': STATUS_LIMIT,
                         'STATUS_UPDATE_INTERVAL': STATUS_UPDATE_INTERVAL,
                         'STOP_DUPLICATE': STOP_DUPLICATE,
                         'SUDO_USERS': SUDO_USERS,
                         'TELEGRAM_API': TELEGRAM_API,
                         'TELEGRAM_HASH': TELEGRAM_HASH,
+                        'TIMEZONE': TIMEZONE,
                         'TORRENT_TIMEOUT': TORRENT_TIMEOUT,
                         'UPSTREAM_REPO': UPSTREAM_REPO,
                         'UPSTREAM_BRANCH': UPSTREAM_BRANCH,
@@ -575,16 +628,15 @@ async def get_buttons(key=None, edit_type=None, edit_mode=None, mess=None):
         buttons.ibutton('Qbit Settings', "botset qbit")
         buttons.ibutton('Aria2c Settings', "botset aria")
         buttons.ibutton('Close', "botset close")
-        msg = 'Bot Settings:'
+        msg = '<b><i>Bot Settings:</i></b>'
     elif key == 'var':
         for k in list(OrderedDict(sorted(config_dict.items())).keys())[START:10+START]:
             buttons.ibutton(k, f"botset editvar {k}")
         buttons.ibutton('Back', "botset back")
         buttons.ibutton('Close', "botset close")
         for x in range(0, len(config_dict)-1, 10):
-            buttons.ibutton(
-                f'{int(x/10)}', f"botset start var {x}", position='footer')
-        msg = f'Config Variables | Page: {int(START/10)}'
+            buttons.ibutton(f'{int(x/10)+1}', f"botset start var {x}", position='footer')
+        msg = f'<b>Config Variables<b> | Page: {int(START/10)+1}'
     elif key == 'private':
         buttons.ibutton('Back', "botset back")
         buttons.ibutton('Close', "botset close")
@@ -603,9 +655,8 @@ Timeout: 60 sec'''
         buttons.ibutton('Back', "botset back")
         buttons.ibutton('Close', "botset close")
         for x in range(0, len(aria2_options)-1, 10):
-            buttons.ibutton(
-                f'{int(x/10)}', f"botset start aria {x}", position='footer')
-        msg = f'Aria2c Options | Page: {int(START/10)} | State: {STATE}'
+            buttons.ibutton(f'{int(x/10)+1}', f"botset start aria {x}", position='footer')
+        msg = f'Aria2c Options | Page: {int(START/10)+1} | State: {STATE}'
     elif key == 'qbit':
         for k in list(qbit_options.keys())[START:10+START]:
             buttons.ibutton(k, f"botset editqbit {k}")
@@ -617,8 +668,8 @@ Timeout: 60 sec'''
         buttons.ibutton('Close', "botset close")
         for x in range(0, len(qbit_options)-1, 10):
             buttons.ibutton(
-                f'{int(x/10)}', f"botset start qbit {x}", position='footer')
-        msg = f'Qbittorrent Options | Page: {int(START/10)} | State: {STATE}'
+                f'{int(x/10)+1}', f"botset start qbit {x}", position='footer')
+        msg = f'Qbittorrent Options | Page: {int(START/10)+1} | State: {STATE}'
     elif edit_type == 'editvar':
         msg = f'<b>Variable:</b> <code>{key}</code>\n\n'
         msg += f'<b>Description:</b> {default_desp.get(key, "No Description Provided")}\n\n'
@@ -700,6 +751,10 @@ async def edit_variable(_, message, pre_message, key):
         aria2_options['bt-stop-timeout'] = f'{value}'
     elif key == 'LEECH_SPLIT_SIZE':
         value = min(int(value), MAX_SPLIT_SIZE)
+    elif key == 'CAP_FONT':
+        value = value.strip().lower()
+        if value not in ['b', 'i', 'u', 's', 'spoiler', 'code']:
+            value = 'code'
     elif key == 'BASE_URL_PORT':
         value = int(value)
         if config_dict['BASE_URL']:

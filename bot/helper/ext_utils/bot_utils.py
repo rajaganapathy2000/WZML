@@ -5,7 +5,7 @@ from os import path as ospath
 from pkg_resources import get_distribution
 from aiofiles import open as aiopen
 from aiofiles.os import remove as aioremove, path as aiopath, mkdir
-from re import match as re_match, sub as re_sub
+from re import match as re_match
 from time import time
 from html import escape
 from uuid import uuid4
@@ -176,10 +176,10 @@ def get_rclone_version():
 
 class EngineStatus:
     STATUS_ARIA = f"Aria2 v{aria2.client.get_version()['version']}"
-    STATUS_GD = f"G-API v{get_distribution('google-api-python-client').version}"
+    STATUS_GD = f"Google-API v{get_distribution('google-api-python-client').version}"
     STATUS_MEGA = f"MegaSDK v{MegaApi('test').getVersion()}"
     STATUS_QB = f"qBit {get_client().app.version}"
-    STATUS_TG = f"Pyro v{get_distribution('pyrogram').version}"
+    STATUS_TG = f"Pyrogram v{get_distribution('pyrogram').version}"
     STATUS_YT = f"yt-dlp v{get_distribution('yt-dlp').version}"
     STATUS_EXT = "pExtract"
     STATUS_SPLIT_MERGE = f"ffmpeg v{get_ffmpeg_version()}"
@@ -199,26 +199,23 @@ def get_readable_message():
         globals()['PAGE_NO'] = PAGES
     for download in list(download_dict.values())[STATUS_START:STATUS_LIMIT+STATUS_START]:
         msg_link = download.message.link if download.message.chat.type in [
-            ChatType.SUPERGROUP, ChatType.CHANNEL] else ''
+            ChatType.SUPERGROUP, ChatType.CHANNEL] and not config_dict['DELETE_LINKS'] else ''
         msg += BotTheme('STATUS_NAME', Name=escape(f'{download.name()}'))
         if download.status() not in [MirrorStatus.STATUS_SPLITTING, MirrorStatus.STATUS_SEEDING]:
             if download.status() != MirrorStatus.STATUS_UPLOADDDL:
                 msg += BotTheme('BAR', Bar=f"{get_progress_bar_string(download.progress())} {download.progress()}")
-                msg += BotTheme('PROCESSED',
-                                Processed=f"{download.processed_bytes()} of {download.size()}")
+                msg += BotTheme('PROCESSED', Processed=f"{download.processed_bytes()} of {download.size()}")
             msg += BotTheme('STATUS', Status=download.status(), Url=msg_link)
             if download.status() != MirrorStatus.STATUS_UPLOADDDL:
                 msg += BotTheme('ETA', Eta=download.eta())
-            if download.status() != MirrorStatus.STATUS_UPLOADDDL:
                 msg += BotTheme('SPEED', Speed=download.speed())
-            msg += BotTheme('ELAPSED', Elapsed=get_readable_time(time() -
-                            download.message.date.timestamp()))
+            msg += BotTheme('ELAPSED', Elapsed=get_readable_time(time() - download.message.date.timestamp()))
             msg += BotTheme('ENGINE', Engine=download.eng())
+            msg += BotTheme('STA_MODE', Mode=download.upload_details['mode'])
             if hasattr(download, 'seeders_num'):
                 try:
                     msg += BotTheme('SEEDERS', Seeders=download.seeders_num())
-                    msg += BotTheme('LEECHERS',
-                                    Leechers=download.leechers_num())
+                    msg += BotTheme('LEECHERS', Leechers=download.leechers_num())
                 except:
                     pass
         elif download.status() == MirrorStatus.STATUS_SEEDING:
@@ -237,8 +234,7 @@ def get_readable_message():
         msg += BotTheme('USER',
                         User=download.message.from_user.mention(style="html"))
         msg += BotTheme('ID', Id=download.message.from_user.id)
-        msg += BotTheme('CANCEL',
-                        Cancel=f"/{BotCommands.CancelMirror}_{download.gid()}")
+        msg += BotTheme('CANCEL', Cancel=f"/{BotCommands.CancelMirror}_{download.gid()}")
 
     if len(msg) == 0:
         return None, None
@@ -264,6 +260,7 @@ def get_readable_message():
         elif tstatus == MirrorStatus.STATUS_UPLOADING or tstatus == MirrorStatus.STATUS_SEEDING:
             up_speed += speed_in_bytes_per_second
 
+    msg += BotTheme('FOOTER')
     if tasks > STATUS_LIMIT:
         msg += BotTheme('PAGE', Page=f"{PAGE_NO}/{PAGES}")
         msg += BotTheme('TASKS', Tasks=tasks)
@@ -272,10 +269,8 @@ def get_readable_message():
         buttons.ibutton(BotTheme('REFRESH'), "status ref")
         buttons.ibutton(BotTheme('NEXT'), "status nex")
         button = buttons.build_menu(3)
-    msg += BotTheme('FOOTER')
     msg += BotTheme('Cpu', cpu=cpu_percent())
-    msg += BotTheme('FREE', free=get_readable_file_size(
-        disk_usage(config_dict['DOWNLOAD_DIR']).free))
+    msg += BotTheme('FREE', free=get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free))
     msg += BotTheme('Ram', ram=virtual_memory().percent)
     msg += BotTheme('uptime', uptime=get_readable_time(time() - botStartTime))
     msg += BotTheme('DL', DL=get_readable_file_size(dl_speed))
@@ -377,9 +372,12 @@ def arg_parser(items, arg_base):
 
 
 async def get_content_type(url):
-    async with aioClientSession(trust_env=True) as session:
-        async with session.get(url) as response:
-            return response.headers.get('Content-Type')
+    try:
+        async with aioClientSession(trust_env=True) as session:
+            async with session.get(url, verify_ssl=False) as response:
+                return response.headers.get('Content-Type')
+    except:
+        return None
 
 
 def update_user_ldata(id_, key=None, value=None):
@@ -412,72 +410,6 @@ async def download_image_url(url):
             else:
                 LOGGER.error(f"Failed to Download Image from {url}")
     return des_dir
-
-
-async def format_filename(file_, lprefix, lsuffix, lremname, lcaption, dirpath):
-    prefile_ = file_
-    # SD-Style V2 ~ WZML-X
-    if lremname:
-        if not lremname.startswith('|'):
-            lremname = f"|{lremname}"
-        lremname = lremname.replace('\s', ' ')
-        slit = lremname.split("|")
-        __newFileName = ospath.splitext(file_)[0]
-        for rep in range(1, len(slit)):
-            args = slit[rep].split(":")
-            if len(args) == 3:
-                __newFileName = re_sub(
-                    args[0], args[1], __newFileName, int(args[2]))
-            elif len(args) == 2:
-                __newFileName = re_sub(args[0], args[1], __newFileName)
-            elif len(args) == 1:
-                __newFileName = re_sub(args[0], '', __newFileName)
-        file_ = __newFileName + ospath.splitext(file_)[1]
-        LOGGER.info(f"New Filename : {file_}")
-
-    nfile_ = file_
-    if lprefix:
-        nfile_ = lprefix.replace('\s', ' ') + file_
-        lprefix = re_sub('<.*?>', '', lprefix).replace('\s', ' ')
-        if not file_.startswith(lprefix):
-            file_ = f"{lprefix}{file_}"
-
-    if lsuffix:
-        lsuffix = lsuffix.replace('\s', ' ')
-        sufLen = len(lsuffix)
-        fileDict = file_.split('.')
-        _extIn = 1 + len(fileDict[-1])
-        _extOutName = '.'.join(
-            fileDict[:-1]).replace('.', ' ').replace('-', ' ')
-        _newExtFileName = f"{_extOutName}{lsuffix}.{fileDict[-1]}"
-        if len(_extOutName) > (64 - (sufLen + _extIn)):
-            _newExtFileName = (
-                _extOutName[: 64 - (sufLen + _extIn)]
-                + f"{lsuffix}.{fileDict[-1]}"
-            )
-        file_ = _newExtFileName
-
-    cap_mono = f"<code>{nfile_}</code>"
-    if lcaption:
-        lcaption = lcaption.replace('\|', '%%').replace('\s', ' ')
-        slit = lcaption.split("|")
-        up_path = ospath.join(dirpath, prefile_)
-        cap_mono = slit[0].format(
-            filename=nfile_,
-            size=get_readable_file_size(await aiopath.getsize(up_path)),
-            # duration = await get_media_info(up_path)[0]
-        )
-        if len(slit) > 1:
-            for rep in range(1, len(slit)):
-                args = slit[rep].split(":")
-                if len(args) == 3:
-                    cap_mono = cap_mono.replace(args[0], args[1], int(args[2]))
-                elif len(args) == 2:
-                    cap_mono = cap_mono.replace(args[0], args[1])
-                elif len(args) == 1:
-                    cap_mono = cap_mono.replace(args[0], '')
-        cap_mono = cap_mono.replace('%%', '|')
-    return cap_mono, file_
 
 
 async def cmd_exec(cmd, shell=False):
