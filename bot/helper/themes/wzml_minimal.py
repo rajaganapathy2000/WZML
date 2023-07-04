@@ -60,7 +60,7 @@ class WZMLStyle:
 
     # async def ping(client, message): ---> __main__.py
     PING = '<i>Starting Ping..</i>'
-    PING_VALUE = '<b>Pong</b>\n\n<code>{value} ms..</code>'
+    PING_VALUE = '<b>Pong</b>\n<code>{value} ms..</code>'
     # ---------------------
 
     # async def __msg_to_reply(self): ---> pyrogramEngine.py
@@ -134,14 +134,15 @@ class WZMLStyle:
     ####--------OVERALL MSG FOOTER----------
     USER =              '\n┠ <b>User:</b> <code>{User}</code> | '
     ID =                                                        '<b>ID:</b> <code>{Id}</code>'
-    CANCEL = '''\n┖ {Cancel}\n\n'''
+    BTSEL =          '\n┠ <b>Select:</b> {Btsel}'
+    CANCEL =         '\n┖ {Cancel}\n\n'
 
     ####------FOOTER--------
     FOOTER = '⌬ <b><i>Bot Stats</i></b>\n'
-    PAGE = '┠ <b>Page:</b> {Page} | '
-    TASKS =                       '<b>Tasks:</b> {Tasks}\n'
+    TASKS =  '┠ <b>Tasks:</b> {Tasks}\n'
+    BOT_TASKS = '┠ <b>Tasks:</b> {Tasks}/{Ttask} | <b>AVL:</b> {Free}\n'
     Cpu = '┠ <b>CPU:</b> {cpu}% | '
-    FREE =                      '<b>FREE:</b> {free}'
+    FREE =                      '<b>F:</b> {free} [{free_p}%]'
     Ram = '\n┠ <b>RAM:</b> {ram}% | '
     uptime =                     '<b>UPTIME:</b> {uptime}'
     DL = '\n┖ <b>DL:</b> {DL}/s | '
@@ -149,7 +150,7 @@ class WZMLStyle:
 
     ###--------BUTTONS-------
     PREVIOUS = '⫷'
-    REFRESH = '♺ Refresh'
+    REFRESH = 'ᴘᴀɢᴇs\n{Page}'
     NEXT = '⫸'
     # ---------------------
 
@@ -177,7 +178,7 @@ class WZMLStyle:
     NO_ACTIVE_DL = '''<i>No Active Downloads!</i>
     
 ⌬ <b><i>Bot Stats</i></b>
-┠ <b>CPU:</b> {cpu}% | <b>FREE:</b> {free}
+┠ <b>CPU:</b> {cpu}% | <b>F:</b> {free} [{free_p}%]
 ┖ <b>RAM:</b> {ram} | <b>UPTIME:</b> {uptime}
     '''
     # ---------------------
